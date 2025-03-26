@@ -5,6 +5,7 @@ import 'package:tngtong/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:tngtong/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class ReferralProgramScreen extends StatefulWidget {
   const ReferralProgramScreen({Key? key}) : super(key: key);
 
@@ -14,12 +15,12 @@ class ReferralProgramScreen extends StatefulWidget {
 
 class _ReferralProgramScreenState extends State<ReferralProgramScreen> {
   String selectedFilter = 'all'; // Default filter is "all"
-  String? ReferralCode;
+  String? ReferralCode='';
   SharedPreferences? prefs; // SharedPreferences instance
   String? loginEmail; // To store the retrieved email
   String? userId;
-  String? userType="affiliater";
-  late List<Map<String, dynamic>> referrals;
+  String? userType = "affiliater";
+  late List<Map<String, dynamic>> referrals=[];
 
   // Example referral data
   /* List<Map<String, dynamic>> referrals = [
@@ -33,25 +34,28 @@ class _ReferralProgramScreenState extends State<ReferralProgramScreen> {
     super.initState();
     _initializePreferences();
   }
+
   Future<void> fetchUserId() async {
     String? id = await ApiService.getAffilaterId(loginEmail);
     setState(() {
       userId = id;
     });
     _getMyRefCode();
-    List<Map<String, dynamic>>  referrals1 = await ApiService.getReferralDetails(userId!, "affiliater");
+    List<Map<String, dynamic>> referrals1 =
+        await ApiService.getReferralDetails(userId!, "affiliater");
     setState(() {
       referrals = referrals1;
     });
     print(referrals);
   }
+
   Future<void> _getMyRefCode() async {
-    String? ReferralId = await ApiService.getMyReferralCode(userId,userType);
+    String? ReferralId = await ApiService.getMyReferralCode(userId, userType);
     setState(() {
       ReferralCode = ReferralId;
     });
-
   }
+
   Future<void> _initializePreferences() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -59,8 +63,8 @@ class _ReferralProgramScreenState extends State<ReferralProgramScreen> {
     });
     print('Login Email: $loginEmail');
     fetchUserId();
-
   }
+
   // Method to copy referral code to clipboard
   Future<void> _copyReferralCode(String code) async {
     await Clipboard.setData(ClipboardData(text: code));
@@ -242,7 +246,8 @@ class _ReferralProgramScreenState extends State<ReferralProgramScreen> {
                 itemCount: referrals.length,
                 itemBuilder: (context, index) {
                   final referral = referrals[index];
-                  if (selectedFilter != 'all' && referral['status'] != selectedFilter) {
+                  if (selectedFilter != 'all' &&
+                      referral['status'] != selectedFilter) {
                     return const SizedBox.shrink();
                   }
                   return ListTile(
@@ -259,24 +264,13 @@ class _ReferralProgramScreenState extends State<ReferralProgramScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Referral Date: ${referral['referralDate']}'),
-                        Text('User Type: ${referral['userType']}'), // Add userType here
+                        Text(
+                            'User Type: ${referral['userType']}'), // Add userType here
                       ],
                     ),
                     trailing: Text(referral['status']),
                   );
-                  /* return ListTile(
-                    leading: Icon(
-                      referral['status'] == 'verified'
-                          ? Icons.check_circle
-                          : Icons.hourglass_empty,
-                      color: referral['status'] == 'verified'
-                          ? Colors.green
-                          : Colors.orange,
-                    ),
-                    title: Text(referral['name']),
-                    subtitle: Text('Referral Date: ${referral['referralDate']}'),
-                    trailing: Text(referral['status']),
-                  );*/
+                  
                 },
               ),
             ),

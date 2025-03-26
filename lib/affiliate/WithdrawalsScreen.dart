@@ -184,6 +184,8 @@ class _WithdrawalsScreenState extends State<WithdrawalsScreen> {
   }
 
   Future<void> getTransactionHistory() async {
+      final apiUrl = '${Config.getEarningsTransactions}$userId&userType=affiliater';
+      print('getTransactionHistory API URL: $apiUrl');
     try {
       final response = await http.get(
         Uri.parse('${Config.getEarningsTransactions}$userId&userType=affiliater'),
@@ -191,6 +193,8 @@ class _WithdrawalsScreenState extends State<WithdrawalsScreen> {
 
         headers: {"Content-Type": "application/json"},
       );
+      print('getTransactionHistory Status Code: ${response.statusCode}');
+      print('getTransactionHistory Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         List<dynamic> jsonResponse = jsonDecode(response.body);

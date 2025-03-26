@@ -5,16 +5,16 @@ import 'package:tngtong/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:tngtong/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-class ReferralProgramScreen extends StatefulWidget {
-  const ReferralProgramScreen({Key? key}) : super(key: key);
+class ReferralProgramScreen2 extends StatefulWidget {
+  const ReferralProgramScreen2({Key? key}) : super(key: key);
 
   @override
-  _ReferralProgramScreenState createState() => _ReferralProgramScreenState();
+  _ReferralProgramScreen2State createState() => _ReferralProgramScreen2State();
 }
 
-class _ReferralProgramScreenState extends State<ReferralProgramScreen> {
+class _ReferralProgramScreen2State extends State<ReferralProgramScreen2> {
   String selectedFilter = 'all'; // Default filter is "all"
-  String? ReferralCode;
+  String? ReferralCode ='';
   SharedPreferences? prefs; // SharedPreferences instance
   String? loginEmail; // To store the retrieved email
   String? userId;

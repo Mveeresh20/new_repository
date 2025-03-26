@@ -1251,6 +1251,8 @@ Widget _buildReferralList() {
 
 }*/
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tngtong/config.dart';
 import 'package:tngtong/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1272,6 +1274,13 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
   String? userId;
   Map<String, dynamic> dashboardData = {};
   String searchQuery = "";
+  bool _isLoading = false;
+
+  String selectedFilter = 'all'; // Default filter is "all"
+  String? ReferralCode = '';
+
+  String? userType = "affiliater";
+  late List<Map<String, dynamic>> referrals = [];
 
   @override
   void initState() {
@@ -1279,28 +1288,70 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
     _initializePreferences();
   }
 
-  Future<void> _initializePreferences() async {
-    prefs = await SharedPreferences.getInstance();
-    setState(() {
-      loginEmail = prefs?.getString('loginEmail');
-    });
-    await fetchUserId();
-    await fetchDashboardData();
-  }
-
   Future<void> fetchUserId() async {
     String? id = await ApiService.getAffilaterId(loginEmail);
     setState(() {
       userId = id;
     });
+    _getMyRefCode();
+    List<Map<String, dynamic>> referrals1 =
+        await ApiService.getReferralDetails(userId!, "affiliater");
+    setState(() {
+      referrals = referrals1;
+    });
+    print(referrals);
   }
+
+  Future<void> _getMyRefCode() async {
+    String? ReferralId = await ApiService.getMyReferralCode(userId, userType);
+    setState(() {
+      ReferralCode = ReferralId;
+    });
+  }
+
+  Future<void> _initializePreferences() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      loginEmail = prefs?.getString('loginEmail');
+    });
+    print('Login Email: $loginEmail');
+    fetchUserId();
+  }
+
+  Future<void> _copyReferralCode(String code) async {
+    await Clipboard.setData(ClipboardData(text: code));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Referral code copied to clipboard!')),
+    );
+  }
+
+  // Method to share referral code via message
+  void _shareReferralCode(String code) {
+    Share.share('Join me and start earning! My referral code is: $code');
+  }
+
+  // Future<void> _initializePreferences1() async {
+  //   prefs = await SharedPreferences.getInstance();
+  //   setState(() {
+  //     loginEmail = prefs?.getString('loginEmail');
+  //   });
+  //   await fetchUserId();
+  //   await fetchDashboardData();
+  // }
+
+  // Future<void> fetchUserId1() async {
+  //   String? id = await ApiService.getAffilaterId(loginEmail);
+  //   setState(() {
+  //     userId = id;
+  //   });
+  // }
 
   Future<void> fetchDashboardData() async {
     String dummyJson =
-        '''{"username": "John Doe", "registrationDate": "2024-01-01", "kycStatus": "Completed", "walletBalance": 5000, "referralIncome": 2500, "totalReferrals": 30, "lastReferrals": [
-    {"name": "Alice", "type": "Brand", "commission": 50, "kycStatus": "Pending"},
-    {"name": "Bob", "type": "Influencer", "commission": 100, "kycStatus": "Completed"}
-    ]}''';
+        '''{"username": "John Doe", "registrationDate": "2024-01-01", "kycStatus": "Completed", "walletBalance": 5000, "referralIncome": 250, "totalReferrals": 30, "lastReferrals": [
+      {"name": "Alice", "type": "Brand", "commission": 50, "kycStatus": "Pending"},
+      {"name": "Bob", "type": "Influencer", "commission": 100, "kycStatus": "Completed"}
+      ]}''';
     setState(() {
       dashboardData = json.decode(dummyJson);
     });
@@ -1309,48 +1360,373 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
       body: SafeArea(
         child: Stack(
           children: [
+            // Main Content Column
             Column(
               children: [
-                _buildDashboardCards(),
-                _buildButtons(),
-                _buildSearchBar(),
-                Expanded(child: _buildReferralList()),
+                // App Bar Section
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: 16.0,
+                    bottom: 16.0,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    height: 40,
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [
+                            Colors.purple.shade500,
+                            Colors.purple.shade500,
+                            Colors.purple.shade500
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.bottomRight),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/new-logo.png',
+                          width: 35,
+                          height: 90,
+                          fit: BoxFit.cover,
+                        ),
+                        const SizedBox(
+                          width: 2,
+                        ),
+                        // Menu Button
+                        IconButton(
+                          icon: const Icon(
+                            Icons.menu,
+                            size: 24,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isNavBarOpen = true;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          Config.appname,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.notifications,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            // Implement notification functionality here
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Dashboard Content
+                // Expanded(
+                //   child: SingleChildScrollView(
+                //     child: Column(
+                //       children: [
+                //         _buildDashboardCards(),
+                //         // _buildButtons(),
+                //         // _buildSearchBar(),
+
+                //       ],
+                //     ),
+                //   ),
+                // ),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDashboardCards(),
+                        // _buildReferralList(),
+                        const SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Earn Through Referrals:',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [Colors.purple, Colors.purple],
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(15)),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'Your Referral Code:',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border:
+                                              Border.all(color: Colors.black),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              ReferralCode ?? 'Fetching',
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            IconButton(
+                                              icon: const Icon(Icons.copy),
+                                              onPressed: () =>
+                                                  _copyReferralCode(
+                                                      ReferralCode!),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.share),
+                                              onPressed: () =>
+                                                  _shareReferralCode(
+                                                      ReferralCode!),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              const Text(
+                                'My Referrals:',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [Colors.purple, Colors.purple],
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(15)),
+                                  ),
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                setState(() =>
+                                                    selectedFilter = 'all');
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color(0xffF4A261),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'All',
+                                                style: TextStyle(
+                                                    color: Colors.white),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                setState(
+                                                  () => selectedFilter =
+                                                      'pending kyc',
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                padding: EdgeInsets.symmetric(
+                                                    vertical: 5,
+                                                    horizontal: 10),
+                                                minimumSize: Size(80, 30),
+                                                backgroundColor:
+                                                    Colors.blue[500],
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Pending KYC',
+                                                style: TextStyle(
+                                                    color: Colors.white),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                setState(() => selectedFilter =
+                                                    'verified');
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color(0xff2A9D8F),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Verified',
+                                                style: TextStyle(
+                                                    color: Colors.white),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      if (referrals.isEmpty)
+                                        const Center(
+                                          child: Text(
+                                            'No referrals yet.',
+                                            style:
+                                                TextStyle(color: Colors.white),
+                                          ),
+                                        )
+                                      else
+                                        ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              NeverScrollableScrollPhysics(),
+                                          itemCount: referrals.length,
+                                          itemBuilder: (context, index) {
+                                            final referral = referrals[index];
+                                            if (selectedFilter != 'all' &&
+                                                referral['status'] !=
+                                                    selectedFilter) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            return ListTile(
+                                              leading: Icon(
+                                                referral['status'] == 'verified'
+                                                    ? Icons.check_circle
+                                                    : Icons.hourglass_empty,
+                                                color: referral['status'] ==
+                                                        'verified'
+                                                    ? Colors.green
+                                                    : Colors.orange,
+                                              ),
+                                              title: Text(
+                                                  referral['name'] ?? 'N/A'),
+                                              subtitle: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                      'Referral Date: ${referral['referralDate'] ?? 'N/A'}'),
+                                                  Text(
+                                                      'User Type: ${referral['userType'] ?? 'N/A'}'),
+                                                ],
+                                              ),
+                                              trailing: Text(
+                                                  referral['status'] ?? 'N/A'),
+                                            );
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
             if (_isNavBarOpen)
               GestureDetector(
-                onTap: () => setState(() => _isNavBarOpen = false),
-                child: Container(color: Colors.black.withOpacity(0.5)),
+                onTap: () {
+                  setState(() {
+                    _isNavBarOpen = false;
+                  });
+                },
+                child: Container(
+                  color: Colors.black.withOpacity(0.5),
+                ),
               ),
+            // Animated NavBar
             AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
               left: _isNavBarOpen ? 0 : -250,
               top: 0,
               bottom: 0,
-              child:
-                  NavBar(onClose: () => setState(() => _isNavBarOpen = false)),
+              child: NavBar(
+                onClose: () {
+                  setState(() {
+                    _isNavBarOpen = false;
+                  });
+                },
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      title: const Text('Welcome Back!',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      leading: IconButton(
-        icon: Icon(Icons.menu),
-        onPressed: () => setState(() => _isNavBarOpen = !_isNavBarOpen),
-      ),
-      actions: [
-        IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
-      ],
     );
   }
 
@@ -1360,12 +1736,23 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildDashboardCard(Icons.account_balance_wallet, 'Wallet',
-              '₹${dashboardData["walletBalance"] ?? 0}', Colors.green),
-          _buildDashboardCard(Icons.monetization_on, 'Income',
-              '₹${dashboardData["referralIncome"] ?? 0}', Colors.blue),
-          _buildDashboardCard(Icons.people, 'Referrals',
-              '${dashboardData["totalReferrals"] ?? 0}', Colors.orange),
+          Container(
+            child: _buildDashboardCard(
+                Icons.account_balance_wallet,
+                'Wallet',
+                '₹${dashboardData["walletBalance"] ?? 0}',
+                Colors.purple.shade500),
+          ),
+          _buildDashboardCard(
+              Icons.monetization_on,
+              'Income',
+              '₹${dashboardData["referralIncome"] ?? 0}',
+              Colors.purple.shade500),
+          _buildDashboardCard(
+              Icons.people,
+              'Referrals',
+              '${dashboardData["totalReferrals"] ?? 0}',
+              Colors.purple.shade500),
         ],
       ),
     );
@@ -1375,57 +1762,195 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
       IconData icon, String title, String value, Color color) {
     return Expanded(
       child: Card(
-        elevation: 4,
+        elevation: 6,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 28, color: color),
-              SizedBox(height: 6),
-              Text(title,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              Text(value,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: SizedBox(
+                height: 20,
+                child: Container(
+                  width: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade500,
+                    borderRadius: const BorderRadius.only(
+                      topLeft:
+                          Radius.circular(16), // Match card's border radius
+                      bottomLeft:
+                          Radius.circular(0), // Match card's border radius
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment:
+                    MainAxisAlignment.center, // Center content vertically
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(icon, size: 24, color: color),
+                      const SizedBox(width: 11),
+                      Text(
+                        value,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildButtons() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton(onPressed: () {}, child: Text('Withdraw')),
-          ElevatedButton(onPressed: () {}, child: Text('Refer')),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDashboardCard(
+  //     IconData icon, String title, String value, Color color) {
+  //   return Expanded(
+  //     child: Card(
+  //       child: Stack(
+  //         children: [
+  //           Positioned(
+  //             left: 0,
+  //             top: 0,
+  //             bottom: 0,
+  //             child: Container(
+  //               width: 2,
+  //               decoration: BoxDecoration(
+  //                 color: Colors.purple.shade500,
+  //                 borderRadius: const BorderRadius.only(
+  //                   topLeft: Radius.circular(5),
+  //                   bottomLeft: Radius.circular(5),
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //           Padding(
+  //             padding: const EdgeInsets.all(8.0),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(
+  //                   title,
+  //                   style: const TextStyle(
+  //                       fontSize: 13, fontWeight: FontWeight.bold),
+  //                 ),
+  //                 const SizedBox(height: 10),
+  //                 Row(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Icon(icon, size: 24, color: Colors.purple.shade500),
+  //                     const SizedBox(width: 11),
+  //                     Center(
+  //                       child: Text(
+  //                         value,
+  //                         style: const TextStyle(
+  //                             fontSize: 12,
+  //                             fontWeight: FontWeight.bold,
+  //                             color: Colors.black),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
 
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search referrals...',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          prefixIcon: Icon(Icons.search),
-        ),
-      ),
-    );
-  }
+  //       elevation: 4,
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(10.0),
+  //         child: Column(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Icon(icon, size: 28, color: color),
+  //             SizedBox(height: 6),
+  //             Text(title,
+  //                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  //             Text(value,
+  //                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+  //           ],
+  //         ),
+  //           ),
+  //     ])),
+  //   );
+
+  // Widget _buildButtons() {
+  //   return Padding(
+  //     padding: const EdgeInsets.all(8.0),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //       children: [
+  //         ElevatedButton(
+  //           style: ElevatedButton.styleFrom(
+  //                                         padding: EdgeInsets.symmetric(
+  //                                             vertical: 5, horizontal: 10),
+  //                                         minimumSize: Size(80, 30),
+  //                                         backgroundColor: Colors.purple[500],
+  //                                         shape: RoundedRectangleBorder(
+  //                                           borderRadius:
+  //                                               BorderRadius.circular(10),
+  //                                         ),
+  //                                       ),
+  //           onPressed: () {}, child: Text('Withdraw', style: TextStyle(color: Colors.white),)),
+  //         ElevatedButton(
+  //           style: ElevatedButton.styleFrom(
+  //                                         padding: EdgeInsets.symmetric(
+  //                                             vertical: 5, horizontal: 10),
+  //                                         minimumSize: Size(80, 30),
+  //                                         backgroundColor: Colors.purple[500],
+  //                                         shape: RoundedRectangleBorder(
+  //                                           borderRadius:
+  //                                               BorderRadius.circular(10),
+  //                                         ),
+  //                                       ),
+  //           onPressed: () {}, child: Text('Refer', style: TextStyle(color: Colors.white),)),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildSearchBar() {
+  //   return Padding(
+  //     padding: const EdgeInsets.all(9.0),
+  //     child: TextField(
+  //       decoration: InputDecoration(
+  //         hintText: 'Search referrals...',
+  //         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+  //         prefixIcon: Icon(Icons.search),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildReferralList() {
     return ListView.builder(
+      shrinkWrap: true, // Important to prevent unbounded height
+      physics:
+          NeverScrollableScrollPhysics(), // To allow scrolling of the main SingleChildScrollView
       itemCount: dashboardData["lastReferrals"]?.length ?? 0,
       itemBuilder: (context, index) {
-        var referral = dashboardData["lastReferrals"][index];
+        var referral = dashboardData["lastReferrals"]?[index];
+        if (referral == null) {
+          return SizedBox.shrink(); // Or some placeholder
+        }
         return Card(
           child: ListTile(
             title: Text(referral["name"] ?? ""),
@@ -1438,3 +1963,267 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
     );
   }
 }
+// import 'package:flutter/material.dart';
+// import 'package:tngtong/config.dart';
+// import 'package:tngtong/api_service.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'dart:convert';
+// import 'nav_bar.dart';
+
+// class AffiliateDashboardScreen extends StatefulWidget {
+//   const AffiliateDashboardScreen({Key? key}) : super(key: key);
+
+//   @override
+//   State<AffiliateDashboardScreen> createState() =>
+//       _AffiliateDashboardScreenState();
+// }
+
+// class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
+//   bool _isNavBarOpen = false;
+//   SharedPreferences? prefs;
+//   String? loginEmail;
+//   String? userId;
+//   Map<String, dynamic> dashboardData = {};
+//   String searchQuery = "";
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _initializePreferences();
+//   }
+
+//   Future<void> _initializePreferences() async {
+//     prefs = await SharedPreferences.getInstance();
+//     setState(() {
+//       loginEmail = prefs?.getString('loginEmail');
+//     });
+//     await fetchUserId();
+//     await fetchDashboardData();
+//   }
+
+//   Future<void> fetchUserId() async {
+//     String? id = await ApiService.getAffilaterId(loginEmail);
+//     setState(() {
+//       userId = id;
+//     });
+//   }
+
+//   Future<void> fetchDashboardData() async {
+//     String dummyJson =
+//         '''{"username": "John Doe", "registrationDate": "2024-01-01", "kycStatus": "Completed", "walletBalance": 5000, "referralIncome": 2500, "totalReferrals": 30, "lastReferrals": [
+//     {"name": "Alice", "type": "Brand", "commission": 50, "kycStatus": "Pending"},
+//     {"name": "Bob", "type": "Influencer", "commission": 100, "kycStatus": "Completed"}
+//     ]}''';
+//     setState(() {
+//       dashboardData = json.decode(dummyJson);
+//     });
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//             body: SafeArea(
+//         child: Stack(
+//           children: [
+
+           
+//               Column(
+//                 children: [
+//                   // App Bar Section
+//                   Padding(
+//                     padding: const EdgeInsets.only(
+//                       top: 16.0,
+//                       bottom: 16.0,
+//                     ),
+//                     child: Container(
+//                       width: double.infinity,
+//                       height: 40,
+//                       padding: const EdgeInsets.all(5),
+//                       decoration: BoxDecoration(
+//                         gradient: LinearGradient(
+//                             colors: [
+//                               Colors.purple.shade500,
+//                               Colors.purple.shade500,
+//                               Colors.purple.shade500
+//                             ],
+//                             begin: Alignment.centerLeft,
+//                             end: Alignment.bottomRight),
+//                       ),
+//                       child: Row(
+//                         crossAxisAlignment: CrossAxisAlignment.center,
+//                         children: [
+//                           Image.asset(
+//                             'assets/images/new-logo.png',
+//                             width: 35,
+//                             height: 90,
+//                             fit: BoxFit.cover,
+//                           ),
+//                           const SizedBox(
+//                             width: 2,
+//                           ),
+//                           // Menu Button
+//                           IconButton(
+//                             icon: const Icon(
+//                               Icons.menu,
+//                               size: 24,
+//                               color: Colors.white,
+//                             ),
+//                             onPressed: () {
+//                               setState(() {
+//                                 _isNavBarOpen = true;
+//                               });
+//                             },
+//                           ),
+//                           const SizedBox(width: 10),
+//                           const Text(
+//                             Config.appname,
+//                             style: TextStyle(
+//                               color: Colors.white,
+//                               fontSize: 18,
+//                               fontWeight: FontWeight.bold,
+//                             ),
+//                           ),
+//                           const Spacer(),
+//                           IconButton(
+//                             icon: const Icon(
+//                               Icons.notifications,
+//                               color: Colors.white,
+//                             ),
+//                             onPressed: () {
+//                             //   Navigator.push(
+//                             //       context,
+//                             //       MaterialPageRoute(
+//                             //           builder: (context) =>
+//                             //               NotificationUi()));
+//                             // },
+//                             }
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+              
+//                           Column(
+//                             children: [
+//               _buildDashboardCards(),
+//               _buildButtons(),
+//               _buildSearchBar(),
+//               Expanded(child: _buildReferralList()),
+//                             ],
+//                           ),
+//                           if (_isNavBarOpen)
+//                             GestureDetector(
+//               onTap: () => setState(() => _isNavBarOpen = false),
+//               child: Container(color: Colors.black.withOpacity(0.5)),
+//                             ),
+//                           AnimatedPositioned(
+//                             duration: const Duration(milliseconds: 300),
+//                             left: _isNavBarOpen ? 0 : -250,
+//                             top: 0,
+//                             bottom: 0,
+//                             child:
+//                 NavBar(onClose: () => setState(() => _isNavBarOpen = false)),
+//                           ),
+//                         ],
+//                       ),
+//    ]), ));
+//   }
+
+//   // AppBar _buildAppBar() {
+//   //   return AppBar(
+//   //     title: const Text('Welcome Back!',
+//   //         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+//   //     leading: IconButton(
+//   //       icon: Icon(Icons.menu),
+//   //       onPressed: () => setState(() => _isNavBarOpen = !_isNavBarOpen),
+//   //     ),
+//   //     actions: [
+//   //       IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
+//   //     ],
+//   //   );
+//   // }
+
+//   Widget _buildDashboardCards() {
+//     return Padding(
+//       padding: const EdgeInsets.all(8.0),
+//       child: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//         children: [
+//           _buildDashboardCard(Icons.account_balance_wallet, 'Wallet',
+//               '₹${dashboardData["walletBalance"] ?? 0}', Colors.green),
+//           _buildDashboardCard(Icons.monetization_on, 'Income',
+//               '₹${dashboardData["referralIncome"] ?? 0}', Colors.blue),
+//           _buildDashboardCard(Icons.people, 'Referrals',
+//               '${dashboardData["totalReferrals"] ?? 0}', Colors.orange),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildDashboardCard(
+//       IconData icon, String title, String value, Color color) {
+//     return Expanded(
+//       child: Card(
+//         elevation: 4,
+//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//         child: Padding(
+//           padding: const EdgeInsets.all(10.0),
+//           child: Column(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               Icon(icon, size: 28, color: color),
+//               SizedBox(height: 6),
+//               Text(title,
+//                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+//               Text(value,
+//                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildButtons() {
+//     return Padding(
+//       padding: const EdgeInsets.all(8.0),
+//       child: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//         children: [
+//           ElevatedButton(onPressed: () {}, child: Text('Withdraw')),
+//           ElevatedButton(onPressed: () {}, child: Text('Refer')),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildSearchBar() {
+//     return Padding(
+//       padding: const EdgeInsets.all(8.0),
+//       child: TextField(
+//         decoration: InputDecoration(
+//           hintText: 'Search referrals...',
+//           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+//           prefixIcon: Icon(Icons.search),
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildReferralList() {
+//     return ListView.builder(
+//       itemCount: dashboardData["lastReferrals"]?.length ?? 0,
+//       itemBuilder: (context, index) {
+//         var referral = dashboardData["lastReferrals"][index];
+//         return Card(
+//           child: ListTile(
+//             title: Text(referral["name"] ?? ""),
+//             subtitle: Text(
+//                 'Type: ${referral["type"]} - KYC: ${referral["kycStatus"]}'),
+//             trailing: Text('₹${referral["commission"]}'),
+//           ),
+//         );
+//       },
+//     );
+//   }
+// }

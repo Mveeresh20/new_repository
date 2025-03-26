@@ -352,10 +352,16 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Future<void> getTransactionHistory() async {
     try {
+      final apiUrl = '${Config.apiDomain}${Config.getAffilaterTransactionHistory}?a_id=$userId';
+      print('API URL: $apiUrl');
       final response = await http.get(
         Uri.parse('${Config.apiDomain}${Config.getAffilaterTransactionHistory}?a_id=$userId'),
+        
         headers: {"Content-Type": "application/json"},
+        
       );
+       print('Response Status Code: ${response.statusCode}'); // Print the status code
+      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         List<dynamic> jsonResponse = jsonDecode(response.body);
@@ -410,6 +416,9 @@ class _WalletScreenState extends State<WalletScreen> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(postData),
       );
+
+       print('Response Status Code: ${response.statusCode}'); // Print the status code
+      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         var jsonResponse = jsonDecode(response.body);

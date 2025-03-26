@@ -40,26 +40,154 @@ class NavBar extends StatelessWidget {
               onPressed: onClose,
             ),
           ),
-          const SizedBox(height: 20),
+
+          Container(
+            padding: EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.purple,
+                  child: Text(
+                    'm', // Replace with user's initial
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                SizedBox(width: 16.0),
+                Expanded(
+                  child: Text(
+                    'manoj kumar',
+                    style: TextStyle(fontSize: 18.0, color: Colors.white),
+                  ),
+                ),
+                IconButton(
+                  icon: CircleAvatar(
+                    child: Icon(Icons.logout),
+                  ),
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const WelcomeScreen()),
+                      (Route<dynamic> route) =>
+                          false, // Removes all previous routes
+                    ); // Handle logout
+                  },
+                ),
+                // Language selection
+              ],
+            ),
+          ),
 
           // Menu Items
-          _buildMenuItem(Icons.home, "Home", context,nextScreen: CelebrityDashboardScreen()),
-          _buildMenuItem(Icons.trending_up, "Wallet", context,nextScreen: WalletScreen()),
-          _buildMenuItem(Icons.person, "Profile", context, nextScreen: ProfileUpdateScreen()),
-          _buildMenuItem(Icons.settings, "My Projects", context,nextScreen: MyProjectsScreen()),
-          _buildMenuItem(Icons.settings, "Withdrawals", context,nextScreen:WithdrawalsScreen()),
-          _buildMenuItem(Icons.settings, "Packages", context,nextScreen:SelectPackageScreen()),
-          _buildMenuItem(Icons.settings, "Referral Program", context,nextScreen:ReferralProgramScreen()),
-          _buildMenuItem(Icons.work, "Detail_project", context,nextScreen:DetailProject()),
-         // _buildMenuItem(Icons.personal_injury_outlined,"Project details", context, nextScreen: CelProjectDetails()),
+          _buildMenuItem(Icons.home, "Home", context,
+              nextScreen: CelebrityDashboardScreen()),
+          _buildMenuItem(Icons.payment, "Packages", context,
+              nextScreen: SelectPackageScreen()),
+          _buildMenuItem(Icons.wallet_giftcard_sharp, "Wallet", context,
+              nextScreen: WalletScreen()),
+          _buildMenuItem(Icons.attach_money, "Withdrawals", context,
+              nextScreen: WithdrawalsScreen()),
+          _buildMenuItem(Icons.person_add, "My Referrals", context,
+              nextScreen: ReferralProgramScreen1()),
+          _buildMenuItem(Icons.settings, "My Projects", context,
+              nextScreen: MyProjectsScreen()),
+
+          _buildMenuItem(Icons.work, "Detail_project", context,
+              nextScreen: DetailProject()),
+          _buildMenuItem(Icons.person, "My Account", context,
+              nextScreen: ProfileUpdateScreen()),
+          // _buildMenuItem(Icons.personal_injury_outlined,"Project details", context, nextScreen: CelProjectDetails()),
           _buildMenuItem(Icons.logout, "Logout", context, isLogout: true),
+          SizedBox(),
+
+          Container(
+            width: double.infinity,
+            child: Card(
+              color: Color(0xFFFFDAB9),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Row(
+                  // Main content is now a Row
+                  children: [
+                    Container(
+                      width: 60, // Adjust size as needed
+                      height: 60, // Adjust size as needed
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.yellow, // Optional background color
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/coin.png',
+                          // Replace with your image path
+                          fit: BoxFit.cover,
+                          width: 40,
+                          height: 40,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16.0),
+                    Expanded(
+                      // To make the Column take remaining space
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Refer & Earn',
+                            style: TextStyle(
+                              color: Colors.purple.shade500,
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 5.0),
+                          Text(
+                            'Earn 20k to 25k monthly by referral this app with your friends and family !!',
+                            textAlign: TextAlign.left,
+                          ),
+                          SizedBox(height: 5.0),
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 5, horizontal: 10),
+                              minimumSize: Size(80, 30),
+                              backgroundColor: Colors.purple[500],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          ReferralProgramScreen1()));
+                              // Handle Refer Now button tap
+                            },
+                            child: Text(
+                              'REFER NOW',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   // Helper method to build menu items
-  Widget _buildMenuItem(IconData icon, String label, BuildContext context, {bool isLogout = false, Widget? nextScreen}) {
+  Widget _buildMenuItem(IconData icon, String label, BuildContext context,
+      {bool isLogout = false, Widget? nextScreen}) {
     return InkWell(
       onTap: () async {
         if (isLogout) {
@@ -71,7 +199,7 @@ class NavBar extends StatelessWidget {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-                (Route<dynamic> route) => false, // Removes all previous routes
+            (Route<dynamic> route) => false, // Removes all previous routes
           );
         } else if (nextScreen != null) {
           // Navigate to the ProfileUpdateScreen
@@ -103,5 +231,3 @@ class NavBar extends StatelessWidget {
     );
   }
 }
-
-
